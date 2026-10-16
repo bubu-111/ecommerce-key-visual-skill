@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Direction Proposal · 3-Direction Thumbnail Compare</title>
+<style>
+/* Direction-proposal thumbnail compare template (implements SKILL.md "thumbnail compare" rule).
+   Three side-by-side, same size & scale; each uses that direction's real colors + bound skeleton;
+   product slot uses the real cutout thumbnail (use a placeholder block labelled "Product placeholder" if not yet processed);
+   each card is captioned: direction name / skeleton id / that direction's color values.
+   Usage: edit window.directions (three entries), open in browser to see three thumbnails, screenshot to PNG. */
+*{box-sizing:border-box}
+body{margin:0;background:#eee;font-family:"Helvetica Neue",Arial,sans-serif;padding:24px;color:#222}
+h1.page-title{font-size:20px;margin:0 0 16px}
+.row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.card{width:320px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.mini{width:320px;height:320px;position:relative;overflow:hidden}
+.mini .bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.mini .layer{position:absolute;inset:14px;display:grid;gap:8px}
+/* Skeleton A: text left / product right (portrait / square) */
+.sk-A .layer{grid-template-columns:1fr 1fr;align-items:center}
+/* Skeleton B: centered symmetry (title on top, product centered, price bottom, all centered) */
+.sk-B .layer{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+.sk-B .prod{flex:1;min-height:0}
+.sk-B .price{align-self:center}
+/* Skeleton C: top/bottom banner (full-width product on top, info bar below; landscape / square) */
+.sk-C .layer{grid-template-columns:1fr;grid-template-rows:1fr auto;align-items:stretch}
+/* Skeleton D: diagonal dynamism (product pressed bottom-right 62%, text top-left 60%; matches layouts.md skeleton D)
+   Note: do NOT change .layer's position — the base rule is already position:absolute;inset:14px, which is itself the positioning context;
+   making it relative collapses the layer to 0 height and anchors all absolute children to the top. */
+.sk-D .prod{position:absolute;right:0;bottom:0;width:62%;height:62%}
+.sk-D .txt{position:absolute;left:0;top:0;width:60%}
+/* Skeleton E: price block upfront (price colour block on top, product next; portrait / square; matches layouts.md skeleton E) */
+.sk-E .layer{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.sk-E .offer{align-self:flex-start;padding:4px 8px;border-radius:6px;font-size:13px;font-weight:800;color:#fff}
+.sk-E .txt{width:100%}
+.sk-E .prod{flex:1;min-height:0}
+.txt{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ln{height:8px;border-radius:4px;background:currentColor;opacity:.28}
+.ln.b{width:70%}.ln.c{width:90%}.ln.d{width:55%}
+.price{margin-top:6px;padding:4px 8px;border-radius:6px;font-size:13px;font-weight:800;color:#fff;align-self:flex-start}
+.prod{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.prod img{max-width:100%;max-height:100%;object-fit:contain}
+.ph{width:80%;height:64%;border:2px dashed currentColor;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;text-align:center;padding:6px;opacity:.85}
+.label{padding:10px 12px;border-top:1px solid #eee;font-size:12px;line-height:1.5}
+.label .dn{font-size:14px;font-weight:800;display:block;margin-bottom:4px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin:0 2px 0 6px;border:1px solid rgba(0,0,0,.2)}
+.sk-tag{display:inline-block;background:#222;color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;margin-right:6px}
+</style>
+<div class="page-title">Direction Proposal · 3-Direction Thumbnail Compare (same size & scale)</div>
+<div class="row" id="row"></div>
+<script>
+// Fill three directions. skeleton: A / B / C / D / E (landscape uses skeleton A; this template renders square thumbnails).
+// Leave productImage empty to show a placeholder block labelled "Product placeholder"; otherwise put the (cropped) asset path.
+window.directions=[
+ {name:'Direction 1 (sample · minimal whitespace)',skeleton:'A',colors:{primary:'#245C50',ink:'#21332F',bg:'#F2F5F1'},productImage:'',note:'text left / product right'},
+ {name:'Direction 2 (sample · color impact)',skeleton:'E',colors:{primary:'#C8442B',ink:'#2A2A2A',bg:'#FFF3EE'},productImage:'',note:'price block on top, product next'},
+ {name:'Direction 3 (sample · diagonal dynamism)',skeleton:'D',colors:{primary:'#3A6EA5',ink:'#FFFFFF',bg:'#0E1B2A'},productImage:'',note:'product bottom-right, text top-left'}
+];
+(function(){
+ const row=document.getElementById('row');
+ for(const d of window.directions||[]){
+  const c=document.createElement('div');c.className='card';
+  const mini=document.createElement('div');mini.className='mini sk-'+d.skeleton;
+  const bg=document.createElement('div');bg.className='bg';bg.style.background=d.colors.bg;mini.appendChild(bg);
+  const layer=document.createElement('div');layer.className='layer';
+  // Bars and placeholder use currentColor to follow the direction's ink value, visible on light and dark backgrounds
+  layer.style.color=d.colors.ink||'#222';
+  const txt=document.createElement('div');txt.className='txt';
+  txt.innerHTML='<div class="ln b"></div><div class="ln c"></div><div class="ln d"></div>';
+  const prod=document.createElement('div');prod.className='prod';
+  if(d.productImage){const im=document.createElement('img');im.src=d.productImage;prod.appendChild(im);}
+  else{const ph=document.createElement('div');ph.className='ph';ph.textContent='Product placeholder';prod.appendChild(ph);}
+  // Place text and product blocks per skeleton (skeleton E adds a separate top price block)
+  if(d.skeleton==='E'){
+    const off=document.createElement('div');off.className='offer';off.style.background=d.colors.primary;off.textContent='Price';
+    layer.appendChild(off);layer.appendChild(txt);layer.appendChild(prod);
+  }
+  else if(d.skeleton==='C'){layer.appendChild(prod);layer.appendChild(txt);}
+  else{layer.appendChild(txt);layer.appendChild(prod);}
+  mini.appendChild(layer);
+  const label=document.createElement('div');label.className='label';
+  label.innerHTML='<span class="dn">'+d.name+'</span>'
+   +'<span class="sk-tag">skeleton '+(d.skeleton||'A')+'</span>'+(d.note||'')
+   +'<br>colors:<span class="sw" style="background:'+d.colors.primary+'"></span>primary '+d.colors.primary
+   +'<span class="sw" style="background:'+d.colors.ink+'"></span>text '+d.colors.ink
+   +'<span class="sw" style="background:'+d.colors.bg+'"></span>bg '+d.colors.bg;
+  c.appendChild(mini);c.appendChild(label);row.appendChild(c);
+ }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>Product key-visual editing template</title>
+<style>
+/* The template is a layout starting point. Adjust per direction; after changing the aspect ratio you must re-check. */
+*{box-sizing:border-box}body{margin:0;padding:24px;background:#ddd;font-family:var(--font)}
+#canvas{width:var(--w);height:var(--h);position:relative;overflow:hidden;background:var(--bg);color:var(--ink)}
+#background{position:absolute;inset:0;background-size:cover;background-position:center}
+.layout{position:absolute;inset:var(--safe);display:grid;grid-template-columns:1fr 1fr;gap:4%;align-items:center}
+.copy{min-width:0;display:flex;flex-direction:column;gap:var(--gap)}
+.brand{font-size:var(--small);font-weight:700;color:var(--primary)}
+.logo{display:block;max-width:65%;max-height:var(--logo-h);object-fit:contain;object-position:left;opacity:1}
+.name{font-size:var(--small);overflow-wrap:anywhere}
+h1{font-size:var(--title);line-height:1.12;margin:0;overflow-wrap:anywhere}
+ul{padding-left:1.2em;margin:0;font-size:var(--body);line-height:1.4;overflow-wrap:anywhere}
+.offer{font-size:var(--price);font-weight:800;line-height:1.1;color:var(--primary);overflow-wrap:anywhere}
+.conditions,.cta{font-size:var(--small);line-height:1.4;overflow-wrap:anywhere}
+/* Manual-break control: a newline (\n) written inside a copy string really breaks the line. Set break points for price
+   combinations and condition notes by hand rather than leaving them to automatic wrapping.
+   English line-width reference (based on a 1080-wide canvas; type sizes scale with min(width,height)/800):
+     line width about 55% of the canvas -> body 20px / headline 48px; 75% -> body 18px / headline 44px; 90% -> body 16px / headline 40px.
+   Latin text may use a per-language font stack via version.font (e.g. "Helvetica Neue", Arial, sans-serif) so it is not rendered by a CJK font. */
+.copy h1,.copy .name,.copy .offer,.copy .conditions,.copy .cta,.copy ul li{white-space:pre-line}
+.product{width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+.product img{max-width:100%;max-height:100%;object-fit:contain}
+.notice{max-width:800px;margin-bottom:16px}.hidden{display:none!important}
+body.export{padding:0;background:transparent}body.export .notice{display:none}
+</style>
+<div class="notice">Edit the design data, replace the original assets, then export with ?only=&lt;language key&gt; (fill in a language in design.versions first if it is disabled). The default content is placeholder, not product fact. The script check covers the file and some overflow only; aesthetics, sourcing, text safe area and product appearance still need human verification.</div>
+<main id="canvas">
+ <div id="background"></div>
+ <div class="layout" data-check>
+  <section class="copy" data-check>
+   <img class="logo hidden" id="logo" alt="Brand logo">
+   <div class="brand" id="brand" data-check></div>
+   <div class="name" id="name" data-check></div>
+   <h1 id="headline" data-check></h1>
+   <ul id="points" data-check></ul>
+   <div class="offer" id="offer" data-check></div>
+   <div class="conditions" id="conditions" data-check></div>
+   <div class="cta" id="cta" data-check></div>
+  </section>
+  <section class="product" data-check><img id="product" alt="Original product asset"></section>
+ </div>
+</main>
+<script>
+// Enter verified facts; amounts include the currency/price type, and conditions keeps the necessary campaign conditions.
+// Only configured languages may be exported; add the languages you need yourself — two languages are not mandatory.
+// The colour/size/font values below are placeholder starting values, unrelated to any specific brand or case; replace them for the current task.
+window.design={
+ width:800,height:800,safe:40,maxBytes:null,
+ colors:{primary:'#245C50',ink:'#21332F',bg:'#F2F5F1'},
+ font:'"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif', // Default font stack (CJK-first cross-platform fallback: any system can pick a usable font, no crash); change per brand guidelines. To set a different stack for one language, use that language's font field. Check font availability and source separately.
+ productImage:'',logoImage:'',backgroundImage:'', // Paths to original assets; never generate the product itself
+
+ // Any language key may be added. brand / name / cta must each have one copy per language — these three are the
+ // easiest to change in one language and forget in the other (the brand line showed "Chinese leaking into the English
+ // version" in six rounds). The template no longer provides a global brand.
+ versions:{
+  cn:{lang:'zh-CN',brand:'【Brand name】',name:'【Product name】',headline:'【Core value】',points:[],offer:'',conditions:'',cta:''},
+  en:null // To enable, fill in: {lang:'en',brand:'【Brand name】',name:'【Product name】',headline:'【Core value】',points:[],offer:'',conditions:'',cta:'【Call to action】',font:'"Helvetica Neue", Arial, sans-serif'}
+ }
+};
+(async function(){
+ const d=window.design, only=new URLSearchParams(location.search).get('only')||'cn';
+ if(!Number.isInteger(d.width)||!Number.isInteger(d.height)||d.width<=0||d.height<=0||!Number.isFinite(d.safe)||d.safe<0||2*d.safe>=Math.min(d.width,d.height))throw new Error('Invalid canvas or safe-area parameters');
+ const v=d.versions[only]; if(!v)throw new Error('Requested language is not configured');
+ if(location.search.includes('only='))document.body.classList.add('export');
+ document.documentElement.lang=v.lang||(only==='cn'?'zh-CN':only);
+ const s=document.documentElement.style,k=Math.min(d.width,d.height)/800;
+ for(const [key,value] of Object.entries({w:d.width+'px',h:d.height+'px',safe:d.safe+'px',primary:d.colors.primary,ink:d.colors.ink,bg:d.colors.bg,font:d.font,gap:16*k+'px',title:48*k+'px',body:20*k+'px',small:18*k+'px',price:48*k+'px','logo-h':40*k+'px'}))s.setProperty('--'+key,value);
+ s.setProperty('--font', v.font || d.font); // a language may set its own stack (Latin-first) so Latin letters are not rendered by a CJK font
+ for(const [id,value] of Object.entries({brand:v.brand,name:v.name,headline:v.headline,offer:v.offer,conditions:v.conditions,cta:v.cta})){
+  const el=document.getElementById(id);el.textContent=value||'';el.classList.toggle('hidden',!value);
+ }
+ // Empty fields are not placeholders (they are simply hidden, without an error), but a missing price/CTA is almost always an omission —
+ // record it in visualWarnings for the export audit to merge into warnings, for a human to judge "genuinely none" vs "forgotten".
+ window.visualWarnings=[];
+ if(!v.offer)window.visualWarnings.push('offer (price) is empty — confirm the task genuinely has no price, otherwise it was omitted');
+ if(!v.cta)window.visualWarnings.push('cta (call to action) is empty — confirm the task genuinely has no button copy, otherwise it was omitted');
+ const list=document.getElementById('points');list.classList.toggle('hidden',!v.points.length);
+ for(const point of v.points){const li=document.createElement('li');li.textContent=point;list.appendChild(li);}
+ for(const [id,src] of [['product',d.productImage],['logo',d.logoImage]]){
+  const el=document.getElementById(id);if(src){el.src=src;el.classList.remove('hidden');}else el.classList.add('hidden');
+ }
+ window.visualReady=(async()=>{
+  if(!d.productImage)throw new Error('Missing original product asset');
+  const values=[v.brand,v.name,v.headline,...v.points,v.offer,v.conditions,v.cta];
+  if(values.some(x=>/【|待填|placeholder/i.test(x)))throw new Error('Placeholder or unfilled content remains');
+  if(!v.headline)throw new Error('Headline is empty — a key visual must carry a single core selling point');
+  if(d.backgroundImage){const im=new Image();im.src=d.backgroundImage;await im.decode();document.getElementById('background').style.backgroundImage='url('+JSON.stringify(d.backgroundImage)+')';}
+  await document.fonts.ready;await Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode()));
+ document.documentElement.dataset.visualState="ready";
+ })();
+ // The browser preview shows the failure reason; export still refuses an incomplete template via visualReady.
+ window.visualReady.catch(e=>{document.documentElement.dataset.visualState='failed';document.querySelector('.notice').textContent='Draft: '+e.message;});
+})();
+</script>
+</html>

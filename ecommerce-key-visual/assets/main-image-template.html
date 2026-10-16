@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>商品主视觉编辑模板</title>
+<style>
+/* 模板是布局起点。按方向调整；更换比例后必须重新检查。 */
+*{box-sizing:border-box}body{margin:0;padding:24px;background:#ddd;font-family:var(--font)}
+#canvas{width:var(--w);height:var(--h);position:relative;overflow:hidden;background:var(--bg);color:var(--ink)}
+#background{position:absolute;inset:0;background-size:cover;background-position:center}
+.layout{position:absolute;inset:var(--safe);display:grid;grid-template-columns:1fr 1fr;gap:4%;align-items:center}
+.copy{min-width:0;display:flex;flex-direction:column;gap:var(--gap)}
+.brand{font-size:var(--small);font-weight:700;color:var(--primary)}
+.logo{display:block;max-width:65%;max-height:var(--logo-h);object-fit:contain;object-position:left;opacity:1}
+.name{font-size:var(--small);overflow-wrap:anywhere}
+h1{font-size:var(--title);line-height:1.12;margin:0;overflow-wrap:anywhere}
+ul{padding-left:1.2em;margin:0;font-size:var(--body);line-height:1.4;overflow-wrap:anywhere}
+.offer{font-size:var(--price);font-weight:800;line-height:1.1;color:var(--primary);overflow-wrap:anywhere}
+.conditions,.cta{font-size:var(--small);line-height:1.4;overflow-wrap:anywhere}
+/* 手动断掌控件：文案字符串里写换行符（\n）会真的换行。价格组合与条件说明请手动断行，不要交给浏览器自动换行。
+   英文整行参考（以 1080 宽为基准，字号随 min(宽,高)/800 等比缩放）：
+     行长约占画布宽 55% → 正文 20px / 标题 48px；75% → 正文 18px / 标题 44px；90% → 正文 16px / 标题 40px。
+   西文可用 version.font 单独指定字体栈（如 "Helvetica Neue", Arial, sans-serif），避免被中文字体渲染。 */
+.copy h1,.copy .name,.copy .offer,.copy .conditions,.copy .cta,.copy ul li{white-space:pre-line}
+.product{width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+.product img{max-width:100%;max-height:100%;object-fit:contain}
+.notice{max-width:800px;margin-bottom:16px}.hidden{display:none!important}
+body.export{padding:0;background:transparent}body.export .notice{display:none}
+</style>
+<div class="notice">编辑 design 数据、替换原素材，再用 ?only=&lt;语言键&gt; 导出（未启用的语种先在 design.versions 里填入内容）。默认内容是占位，不是商品事实。脚本检查仅覆盖文件和部分溢出，审美、来源、文字安全区及商品外观仍须人工核验。</div>
+<main id="canvas">
+ <div id="background"></div>
+ <div class="layout" data-check>
+  <section class="copy" data-check>
+   <img class="logo hidden" id="logo" alt="品牌Logo">
+   <div class="brand" id="brand" data-check></div>
+   <div class="name" id="name" data-check></div>
+   <h1 id="headline" data-check></h1>
+   <ul id="points" data-check></ul>
+   <div class="offer" id="offer" data-check></div>
+   <div class="conditions" id="conditions" data-check></div>
+   <div class="cta" id="cta" data-check></div>
+  </section>
+  <section class="product" data-check><img id="product" alt="商品原素材"></section>
+ </div>
+</main>
+<script>
+// 填写经核验事实；金额含货币/价格类型，conditions保留必要活动条件。
+// 仅配置的语种允许导出；需要的语种自行增加，无需固定双语。
+// 下面的颜色/尺寸/字体都是占位起始值，与任何具体品牌或案例无关，按当前任务替换。
+window.design={
+ width:800,height:800,safe:40,maxBytes:null,
+ colors:{primary:'#245C50',ink:'#21332F',bg:'#F2F5F1'},
+ font:'"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif', // 默认字体栈（CJK 优先的跨平台兜底：任一系统都能挑到可用字体，不崩）；按品牌规范改。某一语种要单独指定时写在该语种的 font 字段。字体可用性与来源另核验。
+ productImage:'',logoImage:'',backgroundImage:'', // 原素材路径，不生成商品本体
+
+ // 可增加任意语言键。brand / name / cta 三处必须每个语种各写一份——它们是"换语言忘了改"的高发处
+ // （品牌行曾六轮复现"英文版混进中文"）。模板不再提供全局 brand。
+ versions:{
+  cn:{lang:'zh-CN',brand:'【品牌名】',name:'【商品名称】',headline:'【核心价值】',points:[],offer:'',conditions:'',cta:'',font:'"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'},
+  en:null // 启用时填：{lang:'en',brand:'【Brand】',name:'【Product name】',headline:'【Value】',points:[],offer:'',conditions:'',cta:'【Call to action】',font:'"Helvetica Neue", Arial, sans-serif'}
+ }
+};
+(async function(){
+ const d=window.design, only=new URLSearchParams(location.search).get('only')||'cn';
+ if(!Number.isInteger(d.width)||!Number.isInteger(d.height)||d.width<=0||d.height<=0||!Number.isFinite(d.safe)||d.safe<0||2*d.safe>=Math.min(d.width,d.height))throw new Error('画布或安全区参数无效');
+ const v=d.versions[only]; if(!v)throw new Error('未配置所请求语种');
+ if(location.search.includes('only='))document.body.classList.add('export');
+ document.documentElement.lang=v.lang||(only==='cn'?'zh-CN':only);
+ const s=document.documentElement.style,k=Math.min(d.width,d.height)/800;
+ for(const [key,value] of Object.entries({w:d.width+'px',h:d.height+'px',safe:d.safe+'px',primary:d.colors.primary,ink:d.colors.ink,bg:d.colors.bg,font:d.font,gap:16*k+'px',title:48*k+'px',body:20*k+'px',small:18*k+'px',price:48*k+'px','logo-h':40*k+'px'}))s.setProperty('--'+key,value);
+ s.setProperty('--font', v.font || d.font); // 语种可单独指定字体栈（西文优先），避免拉丁字母被中文字体渲染
+ for(const [id,value] of Object.entries({brand:v.brand,name:v.name,headline:v.headline,offer:v.offer,conditions:v.conditions,cta:v.cta})){
+  const el=document.getElementById(id);el.textContent=value||'';el.classList.toggle('hidden',!value);
+ }
+ // 空字段不算占位（会被直接隐藏、不报错），但价格/CTA 缺失几乎总是漏填——记入 visualWarnings 供导出审计并入警告，由人工判定"确无"还是"漏填"。
+ window.visualWarnings=[];
+ if(!v.offer)window.visualWarnings.push('offer（价格）为空——确认本任务确无价格，否则为漏填');
+ if(!v.cta)window.visualWarnings.push('cta（行动号召）为空——确认本任务确无按钮文案，否则为漏填');
+ const list=document.getElementById('points');list.classList.toggle('hidden',!v.points.length);
+ for(const point of v.points){const li=document.createElement('li');li.textContent=point;list.appendChild(li);}
+ for(const [id,src] of [['product',d.productImage],['logo',d.logoImage]]){
+  const el=document.getElementById(id);if(src){el.src=src;el.classList.remove('hidden');}else el.classList.add('hidden');
+ }
+ window.visualReady=(async()=>{
+  if(!d.productImage)throw new Error('缺少商品原素材');
+  const values=[v.brand,v.name,v.headline,...v.points,v.offer,v.conditions,v.cta];
+  if(values.some(x=>/【|待填|placeholder/i.test(x)))throw new Error('仍有占位或待填内容');
+  if(!v.headline)throw new Error('主标 headline 为空——主视觉必须有单一核心卖点');
+  if(d.backgroundImage){const im=new Image();im.src=d.backgroundImage;await im.decode();document.getElementById('background').style.backgroundImage='url('+JSON.stringify(d.backgroundImage)+')';}
+  await document.fonts.ready;await Promise.all([...document.images].filter(i=>i.src).map(i=>i.decode()));
+ document.documentElement.dataset.visualState="ready";
+ })();
+ // 浏览器预览显示失败原因；导出仍通过visualReady拒绝不完整模板。
+ window.visualReady.catch(e=>{document.documentElement.dataset.visualState='failed';document.querySelector('.notice').textContent='草稿：'+e.message;});
+})();
+</script>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>方向提案·三方向小样对比</title>
+<style>
+/* 方向提案小样对比模板（复刻 SKILL.md「小样对比图」硬要求）
+   三张并排、同尺寸同缩放比；每张用该方向的真实色值 + 绑定骨架；
+   商品位用真实抠底素材缩略（未处理时用占位块并标注「商品为占位」）；
+   每张下方标注：方向名 / 骨架编号 / 该方向色值。
+   用法：改 window.directions 三个方向，浏览器打开即三张并排小样，截图落盘 PNG。 */
+*{box-sizing:border-box}
+body{margin:0;background:#eee;font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;padding:24px;color:#222}
+h1.page-title{font-size:20px;margin:0 0 16px}
+.row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.card{width:320px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.mini{width:320px;height:320px;position:relative;overflow:hidden}
+.mini .bg{position:absolute;inset:0;background-size:cover;background-position:center}
+.mini .layer{position:absolute;inset:14px;display:grid;gap:8px}
+/* 骨架 A：左文右图（竖/方） */
+.sk-A .layer{grid-template-columns:1fr 1fr;align-items:center}
+/* 骨架 B：居中对称（标题压顶·商品占中·价格收底，全部居中） */
+.sk-B .layer{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+.sk-B .prod{flex:1;min-height:0}
+.sk-B .price{align-self:center}
+/* 骨架 C：上下横幅（上满幅商品·下信息条，横/方） */
+.sk-C .layer{grid-template-columns:1fr;grid-template-rows:1fr auto;align-items:stretch}
+/* 骨架 D：对角动势（商品压右下 62%·文字压左上 60%，与 layouts.md 骨架 D 一致）
+   注意：不要给 .layer 改 position——基础规则已是 position:absolute;inset:14px，它本身就是定位上下文；
+   若改成 relative，层高会塌成 0，absolute 子元素全部锚到顶部。 */
+.sk-D .prod{position:absolute;right:0;bottom:0;width:62%;height:62%}
+.sk-D .txt{position:absolute;left:0;top:0;width:60%}
+/* 骨架 E：价格区块前置（价格色块置顶·商品次之，竖/方，与 layouts.md 骨架 E 一致） */
+.sk-E .layer{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.sk-E .offer{align-self:flex-start;padding:4px 8px;border-radius:6px;font-size:13px;font-weight:800;color:#fff}
+.sk-E .txt{width:100%}
+.sk-E .prod{flex:1;min-height:0}
+.txt{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ln{height:8px;border-radius:4px;background:currentColor;opacity:.28}
+.ln.b{width:70%}.ln.c{width:90%}.ln.d{width:55%}
+.price{margin-top:6px;padding:4px 8px;border-radius:6px;font-size:13px;font-weight:800;color:#fff;align-self:flex-start}
+.prod{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.prod img{max-width:100%;max-height:100%;object-fit:contain}
+.ph{width:80%;height:64%;border:2px dashed currentColor;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;text-align:center;padding:6px;opacity:.85}
+.label{padding:10px 12px;border-top:1px solid #eee;font-size:12px;line-height:1.5}
+.label .dn{font-size:14px;font-weight:800;display:block;margin-bottom:4px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin:0 2px 0 6px;border:1px solid rgba(0,0,0,.2)}
+.sk-tag{display:inline-block;background:#222;color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;margin-right:6px}
+</style>
+<div class="page-title">方向提案 · 三方向小样对比（同尺寸同缩放比）</div>
+<div class="row" id="row"></div>
+<script>
+// 填三个方向。skeleton 取值：A / B / C / D / E（横版用骨架 A 即 A-land，本模板统一按方形小样呈现，横版在正式成图再做）。
+// productImage 留空则显示占位块并标注「商品为占位」；有真实抠底素材时填路径（建议先用 scripts/crop-alpha.py 裁边）。
+window.directions=[
+ {name:'方向一（示例·极简留白）',skeleton:'A',colors:{primary:'#245C50',ink:'#21332F',bg:'#F2F5F1'},productImage:'',note:'左文右图，主标+三点'},
+ {name:'方向二（示例·色块冲击）',skeleton:'E',colors:{primary:'#C8442B',ink:'#2A2A2A',bg:'#FFF3EE'},productImage:'',note:'价格色块置顶，商品次之'},
+ {name:'方向三（示例·对角动势）',skeleton:'D',colors:{primary:'#3A6EA5',ink:'#FFFFFF',bg:'#0E1B2A'},productImage:'',note:'商品压右下·文字压左上'}
+];
+(function(){
+ const row=document.getElementById('row');
+ for(const d of window.directions||[]){
+  const c=document.createElement('div');c.className='card';
+  const mini=document.createElement('div');mini.className='mini sk-'+d.skeleton;
+  const bg=document.createElement('div');bg.className='bg';bg.style.background=d.colors.bg;mini.appendChild(bg);
+  const layer=document.createElement('div');layer.className='layer';
+  // 文字条与占位块用 currentColor 跟随该方向的 ink 色值，深浅底都可见
+  layer.style.color=d.colors.ink||'#222';
+  const txt=document.createElement('div');txt.className='txt';
+  txt.innerHTML='<div class="ln b"></div><div class="ln c"></div><div class="ln d"></div>';
+  const prod=document.createElement('div');prod.className='prod';
+  if(d.productImage){const im=document.createElement('img');im.src=d.productImage;prod.appendChild(im);}
+  else{const ph=document.createElement('div');ph.className='ph';ph.textContent='商品为占位';prod.appendChild(ph);}
+  // 文字块与商品块按骨架顺序放置（骨架 E 的价格色块另作为独立块置顶）
+  if(d.skeleton==='E'){
+    const off=document.createElement('div');off.className='offer';off.style.background=d.colors.primary;off.textContent='¥ 价格位';
+    layer.appendChild(off);layer.appendChild(txt);layer.appendChild(prod);
+  }
+  else if(d.skeleton==='C'){layer.appendChild(prod);layer.appendChild(txt);}
+  else{layer.appendChild(txt);layer.appendChild(prod);}
+  mini.appendChild(layer);
+  const label=document.createElement('div');label.className='label';
+  label.innerHTML='<span class="dn">'+d.name+'</span>'
+   +'<span class="sk-tag">骨架 '+(d.skeleton||'A')+'</span>'+(d.note||'')
+   +'<br>色值：<span class="sw" style="background:'+d.colors.primary+'"></span>主 '+d.colors.primary
+   +'<span class="sw" style="background:'+d.colors.ink+'"></span>字 '+d.colors.ink
+   +'<span class="sw" style="background:'+d.colors.bg+'"></span>底 '+d.colors.bg;
+  c.appendChild(mini);c.appendChild(label);row.appendChild(c);
+ }
+})();
+</script>
+</body>
+</html>
